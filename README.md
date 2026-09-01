@@ -1,0 +1,190 @@
+# blazingly-aasa-mcp
+
+**Apple Universal Links diagnostics, as an MCP server and as a command line.** Answers "why doesn't
+this link open my app?" in one call.
+
+[![CI](https://github.com/sergii-ziborov/blazingly-aasa-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/sergii-ziborov/blazingly-aasa-mcp/actions/workflows/ci.yml)
+![MSRV 1.85](https://img.shields.io/badge/MSRV-1.85-blue)
+![license MIT](https://img.shields.io/badge/license-MIT-blue)
+
+---
+
+A universal link that stops working gives you nothing to go on. The file looks fine. The app is
+installed. The link opens Safari anyway.
+
+This tells you which of the dozen possible reasons it actually is (domain and app identifier below
+are placeholders; the `compare` transcript further down is real output):
+
+```
+$ blazingly-aasa check example.com "https://example.com/help/1?articleNumber=481" \
+    --app ABCDE12345.com.example.app
+
+source:       https://example.com/.well-known/apple-app-site-association (well-known)
+status:       200
+content-type: application/json
+size:         412 bytes
+
+NO_MATCH
+
+application: ABCDE12345.com.example.app
+domain:      example.com
+url:         https://example.com/help/1?articleNumber=481
+
+reason:
+  the entries that apply to ABCDE12345.com.example.app have no rule matching this URL
+
+closest failure:
+  detail #0, rule #1
+  [ok  ] path
+         url:     /help/1
+         pattern: /help/*
+         wildcard match
+  [FAIL] query[articleNumber]
+         url:     481
+         pattern: ????
+         pattern did not match
+```
+
+The rule is right there, and so is the component that failed.
+
+## What it is
+
+A thin shell over [`blazingly-aasa`](https://github.com/sergii-ziborov/blazingly-aasa), which owns
+all `apple-app-site-association` semantics and deliberately has no network. This crate adds the
+three things that library refuses to carry — an HTTPS client, the MCP protocol, and opinions about
+presentation — and nothing else.
+
+The two front ends are not two implementations. `blazingly-aasa check` and the
+`check_universal_link` tool call the same function, so they cannot disagree about an answer.
+
+## Install
+
+```bash
+cargo install --git https://github.com/sergii-ziborov/blazingly-aasa-mcp
+```
+
+## As an MCP server
+
+Point your client at the binary with no arguments. For Claude Code:
+
+```bash
+claude mcp add blazingly-aasa -- blazingly-aasa
+```
+
+Or in a client config file:
+
+```json
+{
+  "mcpServers": {
+    "blazingly-aasa": { "command": "blazingly-aasa" }
+  }
+}
+```
+
+Five tools. Three reach the network and two do not, and every description says which, so an agent
+does not have to guess:
+
+| Tool | Network | What it answers |
+| --- | :-: | --- |
+| `check_universal_link` | yes | Does this domain's file let this app open this URL, and why? |
+| `fetch_association_file` | yes | What is served, how is it hosted, and does it validate? |
+| `compare_origin_and_cdn` | yes | Is Apple's CDN serving something different from what I publish? |
+| `validate_association_file` | no | Lint a file I already have. |
+| `explain_match` | no | Match a URL against a file I already have. |
+
+Two of them do double duty: **omit `app_id`** and instead of "does this app get this URL" you are
+told *every* app the URL reaches.
+
+## As a command line
+
+```bash
+blazingly-aasa check example.com "https://example.com/buy/42" --app ABCDE12345.com.example.app
+blazingly-aasa check example.com "https://example.com/buy/42"        # which apps reach it?
+blazingly-aasa fetch example.com [--cdn]
+blazingly-aasa compare example.com
+blazingly-aasa validate ./apple-app-site-association
+blazingly-aasa explain - example.com "https://example.com/buy/42" < file.json
+```
+
+`--json` emits the structured result instead of formatted text, so the same answers drop into CI.
+Exit status is non-zero when the answer is bad news — a miss, a validation error, an origin and CDN
+that disagree — which is what makes `blazingly-aasa validate` usable as a build step.
+
+## The one that finds the hard bugs
+
+`compare_origin_and_cdn` reads both the file you serve and the file Apple's CDN is currently
+handing to devices, then compares **behaviour** rather than bytes. Reformatting or reordering keys
+reports no change; a stale CDN copy reports exactly what changed:
+
+```
+$ blazingly-aasa compare www.apple.com
+...
+identical: the CDN is serving the same file.
+```
+
+This is the "it works on my machine but not on a device" bug, and it is invisible to every
+validator that only reads your origin.
+
+## What it does about hosting
+
+Apple requires the file to be served over HTTPS, as JSON, with **no redirects**. So this never
+follows one — following it would hide the misconfiguration you are looking for:
+
+```
+$ blazingly-aasa fetch airbnb.com
+error: https://airbnb.com/.well-known/apple-app-site-association: HTTP 301
+
+status:       301
+redirect:     https://www.airbnb.com/.well-known/apple-app-site-association
+  ! the server replied 301 and tried to redirect; Apple requires the association file to be
+    served with no redirects
+```
+
+It also reports a wrong `Content-Type`, a file served from the older root path instead of
+`.well-known`, and Apple's CDN diagnostic headers (`Apple-Failure-Reason` and friends) when reading
+from the CDN.
+
+## What it will not tell you
+
+**Whether a link actually opens an app.** A result describes what the association file permits.
+Opening also depends on the app being installed, on its Associated Domains entitlement naming the
+domain, and on what the device has cached. No file can tell you those, and this does not pretend
+to.
+
+Every answer is scoped that way on purpose — see
+[the library's parity notes](https://github.com/sergii-ziborov/blazingly-aasa/blob/main/docs/parity.md)
+for which behaviours are documented by Apple and which are this project's reading of an
+underspecified sentence.
+
+## Safety of the network side
+
+The caller names a **domain**, never a URL, and only the three documented locations are ever
+requested. Before a socket is opened, hostnames that are IP literals, `localhost`, `.local`, or not
+fully qualified are refused — so a tool call cannot be steered at an internal address. Redirects
+are never followed, which closes the same door a second time. Requests are bounded by a timeout and
+a 128 KiB body ceiling, both adjustable with `--timeout` and `--max-bytes`.
+
+## Dependencies
+
+`blazingly-aasa` for semantics, [`mcport`](https://crates.io/crates/mcport) for MCP, `ureq` for
+HTTPS, `serde`. No async runtime anywhere in the tree — `mcport` and `blazingly-json` are
+Tokio-free by design, and `ureq` is a blocking client, so the whole thing is threads and syscalls.
+
+MSRV is 1.85, not the library's 1.78: the rustls stack `ureq` pulls in reaches `zeroize 1.9`, which
+is edition 2024. That is verified against a 1.85 toolchain in CI rather than assumed.
+
+## Development
+
+```bash
+cargo test
+cargo clippy --all-targets --all-features -- -D warnings
+cargo +1.85 check --lib
+```
+
+Tests drive the real tool catalog over in-memory streams, so a schema or handler change is caught
+here rather than by a client one rejected call at a time. Nothing in the test suite touches the
+network.
+
+## License
+
+MIT. See [LICENSE](LICENSE).

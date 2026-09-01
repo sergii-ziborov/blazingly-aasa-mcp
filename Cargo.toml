@@ -1,0 +1,46 @@
+[package]
+name = "blazingly-aasa-mcp"
+version = "0.1.0"
+edition = "2021"
+# The library holds 1.78. This binary cannot: the rustls stack ureq pulls in reaches zeroize
+# 1.9, which is edition 2024, and that edition stabilized in 1.85. Verified, not assumed.
+rust-version = "1.85"
+license = "MIT"
+description = "MCP server and CLI for debugging Apple Universal Links: fetch, validate, match, explain, and compare apple-app-site-association files"
+repository = "https://github.com/sergii-ziborov/blazingly-aasa-mcp"
+readme = "README.md"
+keywords = ["mcp", "universal-links", "aasa", "ios", "deeplink"]
+categories = ["command-line-utilities", "development-tools", "web-programming"]
+
+[lib]
+name = "blazingly_aasa_mcp"
+path = "src/lib.rs"
+
+[[bin]]
+name = "blazingly-aasa"
+path = "src/main.rs"
+
+[dependencies]
+# Pinned to a revision rather than a version: blazingly-aasa is not on crates.io until its
+# parity table stops saying "decided by this crate" for percent encoding. A released binary
+# should have reproducible semantics regardless.
+blazingly-aasa = { git = "https://github.com/sergii-ziborov/blazingly-aasa", rev = "b12165baa47a0bd15c6609fcdff9724623f52e10" }
+blazingly-json = "0.1.5"
+mcport = "0.5.0"
+serde = { version = "1", features = ["derive"] }
+ureq = "3.4"
+
+[dev-dependencies]
+serde_json = "1"
+
+[lints.rust]
+unsafe_code = "deny"
+missing_docs = "warn"
+
+[lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+
+[profile.release]
+lto = "thin"
+strip = true
