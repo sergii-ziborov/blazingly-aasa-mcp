@@ -32,12 +32,12 @@ fn run(arguments: &[&str]) -> Output {
         .stderr(Stdio::piped())
         .spawn()
         .expect("the binary should start");
-    child
-        .stdin
-        .as_mut()
-        .expect("stdin")
-        .write_all(DOCUMENT.as_bytes())
-        .expect("writing the document should succeed");
+    if let Some(mut stdin) = child.stdin.take() {
+        // Commands that never read stdin -- `fetch`, `--help` -- can exit before this write
+        // lands, and a broken pipe there is the expected outcome rather than a failure. Dropping
+        // the handle afterwards gives EOF to the commands that do read.
+        let _ = stdin.write_all(DOCUMENT.as_bytes());
+    }
     let output = child.wait_with_output().expect("the binary should finish");
     Output {
         stdout: String::from_utf8_lossy(&output.stdout).into_owned(),
@@ -86,12 +86,12 @@ fn validate_exits_non_zero_when_the_file_has_errors() {
         .stdout(Stdio::piped())
         .spawn()
         .expect("start");
-    child
-        .stdin
-        .as_mut()
-        .unwrap()
-        .write_all(br#"{"applinks":{"details":[{"components":[{"/":"/*"}]}]}}"#)
-        .unwrap();
+    {
+        let mut stdin = child.stdin.take().expect("stdin");
+        stdin
+            .write_all(br#"{"applinks":{"details":[{"components":[{"/":"/*"}]}]}}"#)
+            .expect("validate reads stdin, so this write must land");
+    }
     let output = child.wait_with_output().unwrap();
     assert!(
         !output.status.success(),
