@@ -17,7 +17,6 @@ concurrency:
 jobs:
   crates-io:
     runs-on: ubuntu-latest
-    environment: crates-io
     steps:
       - uses: actions/checkout@v5
         with:

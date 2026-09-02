@@ -28,8 +28,7 @@ cargo run -- compare www.apple.com
 
 ## Publishing
 
-One-time: add a crates.io API token as the repository secret `CARGO_REGISTRY_TOKEN`, under an
-environment named `crates-io`.
+One-time: add a crates.io API token as the repository secret `CARGO_REGISTRY_TOKEN`.
 
 ```bash
 cargo update -p blazingly-aasa    # resolve the published version
