@@ -59,6 +59,9 @@ The two front ends are not two implementations. `blazingly-aasa check` and the
 
 ## Install
 
+Not on crates.io yet — see [RELEASING.md](RELEASING.md), which explains why the library has to go
+first. Until then:
+
 ```bash
 cargo install --git https://github.com/sergii-ziborov/blazingly-aasa-mcp
 ```
