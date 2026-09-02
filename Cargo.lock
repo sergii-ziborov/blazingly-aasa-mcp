@@ -17,7 +17,8 @@ checksum = "ac07cdecf99051d9a5238b80f35af32cdeba5b336e55d957b318b50137e18da5"
 [[package]]
 name = "blazingly-aasa"
 version = "0.1.0"
-source = "git+https://github.com/sergii-ziborov/blazingly-aasa?rev=261128ad3f968a3ac7324db26da498d598685068#261128ad3f968a3ac7324db26da498d598685068"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a956ba309218332a0e10ae78538255d01b03cea177d63c341f2410861b0a1dbe"
 dependencies = [
  "blazingly-json",
  "serde",

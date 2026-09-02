@@ -21,10 +21,7 @@ name = "blazingly-aasa"
 path = "src/main.rs"
 
 [dependencies]
-# Both a version and a git revision: local builds take the pinned revision, so this binary always
-# builds against known semantics, while `cargo publish` drops the git source and depends on the
-# crates.io release. Without the version, packaging is refused outright.
-blazingly-aasa = { version = "0.1.0", git = "https://github.com/sergii-ziborov/blazingly-aasa", rev = "261128ad3f968a3ac7324db26da498d598685068" }
+blazingly-aasa = "0.1.0"
 blazingly-json = "0.1.5"
 mcport = "0.5.0"
 serde = { version = "1", features = ["derive"] }

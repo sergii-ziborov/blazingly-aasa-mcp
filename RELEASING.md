@@ -37,9 +37,8 @@ cargo publish --dry-run
 git tag v0.1.0 && git push origin v0.1.0
 ```
 
-Once the library is on crates.io, the `git` and `rev` keys can be dropped from the dependency
-entirely, leaving a plain version requirement. Keep them only while tracking an unreleased change
-in the engine.
+The dependency is now a plain version requirement. Reintroduce a pinned `git`/`rev` alongside it
+only while tracking an unreleased change in the engine, and drop it again once that change ships.
 
 ## Versioning
 
