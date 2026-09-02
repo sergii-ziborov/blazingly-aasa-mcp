@@ -153,8 +153,8 @@ to.
 
 Every answer is scoped that way on purpose — see
 [the library's parity notes](https://github.com/sergii-ziborov/blazingly-aasa/blob/main/docs/parity.md)
-for which behaviours are documented by Apple and which are this project's reading of an
-underspecified sentence.
+for which behaviours are verified against Apple's own `swcutil` (139 of 140 conformance cases) and
+which remain a reading of an underspecified sentence.
 
 ## Safety of the network side
 

@@ -202,10 +202,9 @@ fn validate_reports_stable_codes() {
         .iter()
         .map(|d| d["code"].as_str().unwrap())
         .collect();
-    assert!(
-        codes.contains(&"AASA191"),
-        "`buy/*` cannot match a path; got {codes:?}"
-    );
+    // The document is clean: `buy/*` is a legal path pattern, since swcutil matches it against
+    // `/buy/42`. This asserted AASA191 until the oracle disproved that lint.
+    assert!(codes.is_empty(), "expected a silent report, got {codes:?}");
     assert_eq!(content["apps"][0]["app_id"], APP);
 }
 
