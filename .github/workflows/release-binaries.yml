@@ -1,8 +1,13 @@
 # Builds the binary for every platform the npm launcher can install, and attaches them to the
 # GitHub Release the tag creates.
 #
-# Every target is built on its own native runner rather than cross-compiled: a TLS stack and a
-# native linker are exactly where cross-compilation goes wrong, and the runners are free.
+# Linux and Windows targets are built on their own native runners: a TLS stack and a native linker
+# are exactly where cross-compilation goes wrong, and the runners are free.
+#
+# The two macOS targets are the exception. GitHub retired the macos-13 (Intel) image, so both are
+# built on Apple Silicon -- which is fine here, because Apple ships both architectures in one SDK
+# and `cargo build --target x86_64-apple-darwin` is a supported, everyday thing on macOS. The
+# x86_64 build is not smoke-tested for the obvious reason.
 name: Release binaries
 
 on:
@@ -25,7 +30,7 @@ jobs:
       matrix:
         include:
           - { os: macos-latest,     target: aarch64-apple-darwin }
-          - { os: macos-13,         target: x86_64-apple-darwin }
+          - { os: macos-latest,     target: x86_64-apple-darwin }
           - { os: ubuntu-latest,    target: x86_64-unknown-linux-gnu }
           - { os: ubuntu-24.04-arm, target: aarch64-unknown-linux-gnu }
           - { os: windows-latest,   target: x86_64-pc-windows-msvc }
@@ -49,7 +54,7 @@ jobs:
           set -euo pipefail
           name="blazingly-aasa-${{ matrix.target }}"
           mkdir -p "dist/$name"
-          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+          if [ "${{ matrix.target }}" = "x86_64-pc-windows-msvc" ]; then
             cp "target/${{ matrix.target }}/release/blazingly-aasa.exe" "dist/$name/"
           else
             cp "target/${{ matrix.target }}/release/blazingly-aasa" "dist/$name/"
@@ -63,12 +68,13 @@ jobs:
             (cd dist && sha256sum "$name.tar.gz" > "$name.tar.gz.sha256")
           fi
 
+      # Only where the runner can actually execute what it produced.
       - name: Smoke test the binary it just built
-        if: matrix.os != 'ubuntu-24.04-arm'
+        if: matrix.target != 'x86_64-apple-darwin'
         shell: bash
         run: |
           bin="target/${{ matrix.target }}/release/blazingly-aasa"
-          [ "${{ matrix.os }}" = "windows-latest" ] && bin="$bin.exe"
+          [ "${{ matrix.target }}" = "x86_64-pc-windows-msvc" ] && bin="$bin.exe"
           "$bin" --version
           printf '{"applinks":{"details":[{"appID":"A.b","components":[{"/":"/x"}]}]}}' \
             | "$bin" explain - example.com https://example.com/x --app A.b
