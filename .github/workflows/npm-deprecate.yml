@@ -1,0 +1,43 @@
+# Marks a published npm version as deprecated. npm shows the message on install and the version
+# stays installable, which is the right treatment for a version that works but should not be used.
+#
+# Unpublishing is deliberately not offered here: it breaks anyone who pinned the version, and npm
+# only permits it for 72 hours anyway.
+name: Deprecate npm version
+
+on:
+  workflow_dispatch:
+    inputs:
+      package:
+        description: Package name, for example blazingly-aasa
+        required: true
+        default: blazingly-aasa-mcp
+      version:
+        description: The exact version to deprecate, for example 0.1.0
+        required: true
+      message:
+        description: What to tell people instead
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  deprecate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+      - name: Deprecate
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          PACKAGE: ${{ inputs.package }}
+          VERSION: ${{ inputs.version }}
+          MESSAGE: ${{ inputs.message }}
+        run: |
+          echo "acting as: $(npm whoami)"
+          npm deprecate "$PACKAGE@$VERSION" "$MESSAGE"
+          echo "--- current state ---"
+          npm view "$PACKAGE@$VERSION" deprecated
