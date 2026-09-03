@@ -1,0 +1,57 @@
+# Publishes the npm launcher. Manual and tag-gated: an npm version cannot be replaced.
+#
+# Run this only after `Release binaries` has attached artifacts to the matching release -- the
+# launcher downloads from `v<package version>`, and publishing first means every install in the
+# gap warns and installs nothing usable.
+name: Publish npm
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "npm-v*"
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      - name: Report the publishing identity
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: echo "publishing to npm as: $(npm whoami)"
+
+      - name: Verify the release the launcher will download from exists
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="$(node -p "require('./npm/package.json').version")"
+          for triple in aarch64-apple-darwin x86_64-apple-darwin \
+                        x86_64-unknown-linux-gnu aarch64-unknown-linux-gnu \
+                        x86_64-pc-windows-msvc; do
+            url="https://github.com/${{ github.repository }}/releases/download/v$version/blazingly-aasa-$triple.tar.gz"
+            code="$(curl -sL -o /dev/null -w '%{http_code}' "$url")"
+            echo "  $triple -> $code"
+            [ "$code" = "200" ] || { echo "missing release artifact: $url" >&2; exit 1; }
+          done
+
+      - name: Install and run it end to end
+        working-directory: npm
+        run: |
+          npm install --ignore-scripts
+          node scripts/install.mjs
+          node scripts/run.mjs --version
+
+      - name: Publish
+        working-directory: npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public

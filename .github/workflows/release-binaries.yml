@@ -1,0 +1,81 @@
+# Builds the binary for every platform the npm launcher can install, and attaches them to the
+# GitHub Release the tag creates.
+#
+# Every target is built on its own native runner rather than cross-compiled: a TLS stack and a
+# native linker are exactly where cross-compilation goes wrong, and the runners are free.
+name: Release binaries
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing tag to build and attach binaries to
+        required: true
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { os: macos-latest,     target: aarch64-apple-darwin }
+          - { os: macos-13,         target: x86_64-apple-darwin }
+          - { os: ubuntu-latest,    target: x86_64-unknown-linux-gnu }
+          - { os: ubuntu-24.04-arm, target: aarch64-unknown-linux-gnu }
+          - { os: windows-latest,   target: x86_64-pc-windows-msvc }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      - run: cargo build --release --locked --target ${{ matrix.target }}
+
+      - name: Package
+        shell: bash
+        run: |
+          set -euo pipefail
+          name="blazingly-aasa-${{ matrix.target }}"
+          mkdir -p "dist/$name"
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            cp "target/${{ matrix.target }}/release/blazingly-aasa.exe" "dist/$name/"
+          else
+            cp "target/${{ matrix.target }}/release/blazingly-aasa" "dist/$name/"
+          fi
+          cp README.md LICENSE "dist/$name/"
+          tar -czf "dist/$name.tar.gz" -C dist "$name"
+          # The launcher verifies this before running anything it downloaded.
+          if command -v shasum >/dev/null; then
+            (cd dist && shasum -a 256 "$name.tar.gz" > "$name.tar.gz.sha256")
+          else
+            (cd dist && sha256sum "$name.tar.gz" > "$name.tar.gz.sha256")
+          fi
+
+      - name: Smoke test the binary it just built
+        if: matrix.os != 'ubuntu-24.04-arm'
+        shell: bash
+        run: |
+          bin="target/${{ matrix.target }}/release/blazingly-aasa"
+          [ "${{ matrix.os }}" = "windows-latest" ] && bin="$bin.exe"
+          "$bin" --version
+          printf '{"applinks":{"details":[{"appID":"A.b","components":[{"/":"/x"}]}]}}' \
+            | "$bin" explain - example.com https://example.com/x --app A.b
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tag || github.ref_name }}
+          files: |
+            dist/*.tar.gz
+            dist/*.tar.gz.sha256

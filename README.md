@@ -60,7 +60,8 @@ The two front ends are not two implementations. `blazingly-aasa check` and the
 ## Install
 
 ```bash
-cargo install blazingly-aasa-mcp
+npx @sergii-ziborov/aasa-mcp --help     # no Rust needed
+cargo install blazingly-aasa-mcp        # or from source
 ```
 
 ## As an MCP server
@@ -68,7 +69,7 @@ cargo install blazingly-aasa-mcp
 Point your client at the binary with no arguments. For Claude Code:
 
 ```bash
-claude mcp add blazingly-aasa -- blazingly-aasa
+claude mcp add blazingly-aasa -- npx -y @sergii-ziborov/aasa-mcp
 ```
 
 Or in a client config file:
@@ -76,10 +77,17 @@ Or in a client config file:
 ```json
 {
   "mcpServers": {
-    "blazingly-aasa": { "command": "blazingly-aasa" }
+    "blazingly-aasa": {
+      "command": "npx",
+      "args": ["-y", "@sergii-ziborov/aasa-mcp"]
+    }
   }
 }
 ```
+
+The npm package is a launcher: it downloads the Rust binary built for your platform from the
+matching GitHub release and verifies its SHA-256 before use. Prebuilt for macOS (arm64, x64),
+Linux (x64, arm64), and Windows (x64).
 
 Five tools. Three reach the network and two do not, and every description says which, so an agent
 does not have to guess:
