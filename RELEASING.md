@@ -45,3 +45,16 @@ only while tracking an unreleased change in the engine, and drop it again once t
 The engine's matching behaviour is this crate's behaviour. When `blazingly-aasa` changes what a
 rule decides, say so here too — someone running `blazingly-aasa validate` in CI will see different
 output, and the version bump is the only warning they get.
+
+## The npm launcher
+
+`npm/` is published as `blazingly-aasa-mcp` -- the same name as the crate, so `cargo install` and
+`npx` name the same thing.
+
+It downloads the binary from the GitHub release tagged `v<npm package version>`, so those two
+versions must move together. `tests/npm_launcher.rs` enforces that the npm version matches the
+crate version, and the publish workflow refuses to run until every artifact it will download
+actually exists in that release.
+
+Order for a release: tag `v<version>` (builds binaries and publishes the crate), then run
+`Publish npm` once the release has its artifacts.

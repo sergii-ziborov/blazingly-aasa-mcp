@@ -60,7 +60,7 @@ The two front ends are not two implementations. `blazingly-aasa check` and the
 ## Install
 
 ```bash
-npx @sergii-ziborov/aasa-mcp --help     # no Rust needed
+npx blazingly-aasa-mcp --help     # no Rust needed
 cargo install blazingly-aasa-mcp        # or from source
 ```
 
@@ -69,7 +69,7 @@ cargo install blazingly-aasa-mcp        # or from source
 Point your client at the binary with no arguments. For Claude Code:
 
 ```bash
-claude mcp add blazingly-aasa -- npx -y @sergii-ziborov/aasa-mcp
+claude mcp add blazingly-aasa -- npx -y blazingly-aasa-mcp
 ```
 
 Or in a client config file:
@@ -79,7 +79,7 @@ Or in a client config file:
   "mcpServers": {
     "blazingly-aasa": {
       "command": "npx",
-      "args": ["-y", "@sergii-ziborov/aasa-mcp"]
+      "args": ["-y", "blazingly-aasa-mcp"]
     }
   }
 }

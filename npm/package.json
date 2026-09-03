@@ -1,5 +1,5 @@
 {
-  "name": "@sergii-ziborov/aasa-mcp",
+  "name": "blazingly-aasa-mcp",
   "version": "0.1.0",
   "description": "MCP server and CLI for debugging Apple Universal Links: fetch, validate, match, explain, and compare apple-app-site-association files",
   "license": "MIT",
@@ -18,12 +18,31 @@
     "directory": "npm"
   },
   "homepage": "https://github.com/sergii-ziborov/blazingly-aasa-mcp#readme",
-  "bugs": { "url": "https://github.com/sergii-ziborov/blazingly-aasa-mcp/issues" },
+  "bugs": {
+    "url": "https://github.com/sergii-ziborov/blazingly-aasa-mcp/issues"
+  },
   "type": "module",
-  "bin": { "blazingly-aasa": "./scripts/run.mjs" },
-  "files": ["scripts", "README.md", "LICENSE"],
-  "scripts": { "postinstall": "node scripts/install.mjs" },
-  "engines": { "node": ">=18" },
-  "os": ["darwin", "linux", "win32"],
-  "cpu": ["x64", "arm64"]
+  "bin": {
+    "blazingly-aasa": "./scripts/run.mjs"
+  },
+  "files": [
+    "scripts",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "postinstall": "node scripts/install.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "os": [
+    "darwin",
+    "linux",
+    "win32"
+  ],
+  "cpu": [
+    "x64",
+    "arm64"
+  ]
 }

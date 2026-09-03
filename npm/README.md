@@ -1,10 +1,10 @@
-# @sergii-ziborov/aasa-mcp
+# blazingly-aasa-mcp
 
 MCP server and CLI for debugging Apple Universal Links. Answers "why doesn't this link open my
 app?" in one call.
 
 ```bash
-npx @sergii-ziborov/aasa-mcp check example.com "https://example.com/buy/42" \
+npx blazingly-aasa-mcp check example.com "https://example.com/buy/42" \
   --app ABCDE12345.com.example.app
 ```
 
@@ -15,7 +15,7 @@ As an MCP server, point your client at it with no arguments:
   "mcpServers": {
     "blazingly-aasa": {
       "command": "npx",
-      "args": ["-y", "@sergii-ziborov/aasa-mcp"]
+      "args": ["-y", "blazingly-aasa-mcp"]
     }
   }
 }
