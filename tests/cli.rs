@@ -176,3 +176,31 @@ fn an_unknown_command_explains_itself() {
     assert!(output.stderr.contains("frobnicate"));
     assert!(output.stderr.contains("blazingly-aasa check"));
 }
+
+/// A public hostname that resolves into private space must be refused.
+///
+/// `check_domain` is string validation and cannot see this: `localtest.me` is a well-formed public
+/// name that resolves to `127.0.0.1`. The address is vetted in the resolver instead. Requires DNS,
+/// so it is opt-in: `cargo test -- --ignored`.
+#[test]
+#[ignore = "requires DNS"]
+fn a_hostname_resolving_into_private_space_is_refused() {
+    for (domain, address) in [
+        ("localtest.me", "127.0.0.1"),
+        ("127-0-0-1.sslip.io", "127.0.0.1"),
+        ("10-0-0-1.sslip.io", "10.0.0.1"),
+    ] {
+        let output = run(&["fetch", domain]);
+        assert!(!output.success, "{domain} should be refused");
+        assert!(
+            output.stderr.contains("inside the local network"),
+            "{domain} should say why it was refused, got: {}",
+            output.stderr
+        );
+        assert!(
+            output.stderr.contains(address),
+            "{domain} should name the address it resolved to, got: {}",
+            output.stderr
+        );
+    }
+}

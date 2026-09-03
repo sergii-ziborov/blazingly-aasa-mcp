@@ -167,10 +167,28 @@ which remain a reading of an underspecified sentence.
 ## Safety of the network side
 
 The caller names a **domain**, never a URL, and only the three documented locations are ever
-requested. Before a socket is opened, hostnames that are IP literals, `localhost`, `.local`, or not
-fully qualified are refused — so a tool call cannot be steered at an internal address. Redirects
-are never followed, which closes the same door a second time. Requests are bounded by a timeout and
-a 128 KiB body ceiling, both adjustable with `--timeout` and `--max-bytes`.
+requested. Three layers stop a tool call being steered at an internal address:
+
+**The name.** IP literals, `localhost`, `.local`, and anything not fully qualified are refused
+before a socket is opened.
+
+**The address.** A name is not an address: `evil.example` is a well-formed public hostname that can
+resolve to `127.0.0.1`, `10.0.0.1`, or the cloud metadata endpoint at `169.254.169.254`. DNS
+answers are filtered against loopback, private, link-local, carrier-grade NAT, multicast, and
+reserved ranges — IPv6 included, and IPv4-mapped IPv6 unwrapped, since `::ffff:127.0.0.1` reaches
+loopback. The filtering happens *inside* the resolver, so the client connects to exactly the
+addresses that were vetted and there is no second lookup for DNS rebinding to poison.
+
+**The route.** Proxies are disabled. `ureq` reads `HTTPS_PROXY` from the environment by default,
+and a proxied request resolves the name at the proxy rather than here — which would route around
+both layers above.
+
+Redirects are never followed, which is both Apple's requirement and one less way to reach somewhere
+unnamed. Requests are bounded by a timeout and a 128 KiB body ceiling, adjustable with `--timeout`
+and `--max-bytes`.
+
+This matters more here than for an ordinary CLI: an MCP server's arguments can come from a
+repository, an issue, or a README that an agent was asked to act on.
 
 ## Dependencies
 

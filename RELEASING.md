@@ -58,3 +58,16 @@ actually exists in that release.
 
 Order for a release: tag `v<version>` (builds binaries and publishes the crate), then run
 `Publish npm` once the release has its artifacts.
+
+## The network guard
+
+`src/resolver.rs` is a security boundary, not a convenience. It filters DNS answers so a public
+hostname cannot resolve into the local network, and it does the filtering inside the resolver so
+the client connects to exactly the addresses that were vetted -- there is no second lookup for DNS
+rebinding to poison. Proxies are disabled alongside it, because a proxied request resolves the name
+at the proxy instead.
+
+Do not replace the agent construction in `fetch::agent` with `Config::into()`: that installs the
+default resolver and re-enables environment proxies, and nothing would fail visibly.
+
+`cargo test -- --ignored` exercises it against real DNS.

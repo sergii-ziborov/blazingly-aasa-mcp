@@ -10,4 +10,5 @@
 pub mod fetch;
 pub mod mcp;
 pub mod render;
+pub mod resolver;
 pub mod tools;

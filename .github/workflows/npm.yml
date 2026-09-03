@@ -1,4 +1,4 @@
-# Publishes the npm launcher. Manual and tag-gated: an npm version cannot be replaced.
+# Publishes the npm launcher (blazingly-aasa-mcp). Manual and tag-gated: an npm version cannot be replaced.
 #
 # Run this only after `Release binaries` has attached artifacts to the matching release -- the
 # launcher downloads from `v<package version>`, and publishing first means every install in the

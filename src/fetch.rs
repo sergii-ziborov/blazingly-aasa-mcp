@@ -9,12 +9,23 @@
 //! somewhere the caller did not name.
 //!
 //! **Only HTTPS, only public hostnames, only the two documented paths.** The caller supplies a
-//! domain, never a URL, so this cannot be pointed at an arbitrary endpoint. Hostnames that resolve
-//! inside a private network are refused before any request is made.
+//! domain, never a URL, so this cannot be pointed at an arbitrary endpoint.
+//!
+//! **A name is not an address.** [`check_domain`] rejects an IP literal or `localhost`, but
+//! `evil.example` is a well-formed public hostname that can resolve to `127.0.0.1` or
+//! `169.254.169.254`. The address itself is vetted in [`crate::resolver`], which hands ureq only
+//! addresses outside the local network — and, because ureq connects to exactly what the resolver
+//! returns, leaves no second lookup for DNS rebinding to poison.
+//!
+//! **No proxies.** ureq reads `HTTPS_PROXY` from the environment by default, and a proxied request
+//! resolves the name at the proxy rather than here, which would route around all of the above.
 
 use std::fmt;
 use std::net::IpAddr;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
+
+use crate::resolver::{PublicOnlyResolver, Rejections};
 
 /// Where an association file was read from.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
@@ -178,7 +189,7 @@ pub fn check_domain(domain: &str) -> Result<(), String> {
     Ok(())
 }
 
-fn agent(options: FetchOptions) -> ureq::Agent {
+fn agent(options: FetchOptions, rejections: Rejections) -> ureq::Agent {
     let config = ureq::Agent::config_builder()
         .timeout_global(Some(options.timeout))
         // Apple requires the file to be served without redirects, so following one would hide the
@@ -186,9 +197,16 @@ fn agent(options: FetchOptions) -> ureq::Agent {
         .max_redirects(0)
         .max_redirects_will_error(false)
         .https_only(true)
+        // A proxy would do the name lookup itself, which is exactly what PublicOnlyResolver is
+        // there to prevent. ureq picks proxies up from the environment unless told not to.
+        .proxy(None)
         .user_agent(concat!("blazingly-aasa-mcp/", env!("CARGO_PKG_VERSION")))
         .build();
-    config.into()
+    ureq::Agent::with_parts(
+        config,
+        ureq::unversioned::transport::DefaultConnector::default(),
+        PublicOnlyResolver::new(rejections),
+    )
 }
 
 /// Reads one association file.
@@ -212,14 +230,24 @@ pub fn fetch(
         }));
     }
 
-    let response = agent(options).get(&url).call().map_err(|error| {
-        Box::new(FetchError {
-            source,
-            url: url.clone(),
-            message: error.to_string(),
-            hosting: None,
-        })
-    })?;
+    // The resolver records why it refused an address; without it a blocked host is
+    // indistinguishable from a typo.
+    let rejections: Rejections = Arc::new(Mutex::new(Vec::new()));
+    let response = agent(options, rejections.clone())
+        .get(&url)
+        .call()
+        .map_err(|error| {
+            let refused = rejections
+                .lock()
+                .ok()
+                .and_then(|reasons| reasons.first().cloned());
+            Box::new(FetchError {
+                source,
+                url: url.clone(),
+                message: refused.unwrap_or_else(|| error.to_string()),
+                hosting: None,
+            })
+        })?;
 
     let status = response.status().as_u16();
     let header = |name: &str| {
