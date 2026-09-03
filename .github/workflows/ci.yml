@@ -25,6 +25,10 @@ jobs:
       # No test reaches the network, so CI is not at the mercy of someone else's DNS.
       - run: cargo test --all-targets
       - run: cargo clippy --all-targets --all-features -- -D warnings
+      # A workflow that does not parse is registered by path, reports no triggers, and never runs.
+      - name: Workflow files parse and declare triggers
+        if: matrix.os == 'ubuntu-latest'
+        run: pip install --quiet pyyaml && python3 scripts/check_workflows.py
       - name: Documentation
         run: cargo doc --no-deps --all-features
         env:

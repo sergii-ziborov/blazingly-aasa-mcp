@@ -27,7 +27,8 @@ jobs:
       - name: Report the publishing identity
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: echo "publishing to npm as: $(npm whoami)"
+        run: |
+          echo "publishing to npm as: $(npm whoami)"
 
       - name: Verify the release the launcher will download from exists
         shell: bash
