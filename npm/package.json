@@ -1,6 +1,6 @@
 {
   "name": "blazingly-aasa-mcp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "MCP server and CLI for debugging Apple Universal Links: fetch, validate, match, explain, and compare apple-app-site-association files",
   "license": "MIT",
   "keywords": [
