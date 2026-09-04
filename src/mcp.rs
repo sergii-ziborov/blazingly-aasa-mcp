@@ -132,7 +132,7 @@ fn with_network_tools(server: McpServer, options: FetchOptions) -> McpServer {
         .tool(
             "compare_origin_and_cdn",
             "Compares the association file a site serves against the one Apple's CDN is handing \
-             to devices. Reaches the network. Compares behaviour rather than bytes, so \
+             to devices. Reaches the network. Compares effective policy rather than bytes, so \
              reformatting reports no change while a stale CDN copy does. Use this when a link \
              works in testing but not on a real device.",
             json!({

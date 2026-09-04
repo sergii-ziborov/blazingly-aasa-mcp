@@ -121,7 +121,7 @@ that disagree — which is what makes `blazingly-aasa validate` usable as a buil
 ## The one that finds the hard bugs
 
 `compare_origin_and_cdn` reads both the file you serve and the file Apple's CDN is currently
-handing to devices, then compares **behaviour** rather than bytes. Reformatting or reordering keys
+handing to devices, then compares **effective policy** rather than bytes. Reformatting or reordering keys
 reports no change; a stale CDN copy reports exactly what changed:
 
 ```

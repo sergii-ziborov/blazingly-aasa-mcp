@@ -113,9 +113,12 @@ pub struct CdnComparison {
     pub origin: Hosting,
     /// Transport facts for the CDN.
     pub apple_cdn: Hosting,
-    /// Whether the two make the same decisions for every app.
+    /// Whether the two normalise to the same effective policy.
+    ///
+    /// `true` guarantees the same decision for every URL. `false` means they may differ; it does
+    /// not prove they do, and no witness URL is produced.
     pub equivalent: bool,
-    /// The behavioural differences, empty when equivalent.
+    /// The policy differences, empty when equivalent.
     pub changes: Vec<SemanticChange>,
     /// Whether the two files are also byte-for-byte identical in structure.
     pub structurally_identical: bool,

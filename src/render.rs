@@ -159,7 +159,7 @@ pub fn comparison(comparison: &CdnComparison) -> String {
         return out;
     }
     out.push_str(&format!(
-        "DIFFERENT: {} behavioural change(s). Apple's CDN may be serving an older file.\n\n",
+        "DIFFERENT: {} policy change(s). Apple's CDN may be serving an older file.\n\n",
         comparison.changes.len()
     ));
     for change in &comparison.changes {
