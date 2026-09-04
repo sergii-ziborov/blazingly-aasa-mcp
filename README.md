@@ -90,20 +90,26 @@ matching GitHub release and verifies its SHA-256 before use. Prebuilt for macOS 
 Linux (x64, arm64), and Windows (x64).
 
 Five tools. Three reach the network and two do not, and every description says which, so an agent
-does not have to guess:
+does not have to guess.
 
-| Tool | Network | What it answers |
-| --- | :-: | --- |
-| `check_universal_link` | yes | Does this domain's file let this app open this URL, and why? |
-| `fetch_association_file` | yes | What is served, how is it hosted, and does it validate? |
-| `compare_origin_and_cdn` | yes | Is Apple's CDN serving something different from what I publish? |
-| `validate_association_file` | no | Lint a file I already have. |
-| `explain_match` | no | Match a URL against a file I already have. |
+| Tool | Network | Required | Optional | What it answers |
+| --- | :-: | --- | --- | --- |
+| `check_universal_link` | yes | `domain`, `url` | `app_id` | Does this domain's file let this app open this URL, and why? |
+| `fetch_association_file` | yes | `domain` | — | What is served, how is it hosted, and does it validate? |
+| `compare_origin_and_cdn` | yes | `domain` | — | Is Apple's CDN serving something different from what I publish? |
+| `validate_association_file` | no | `content` | — | Lint a file I already have. |
+| `explain_match` | no | `content`, `domain`, `url` | `app_id` | Match a URL against a file I already have. |
 
 Two of them do double duty: **omit `app_id`** and instead of "does this app get this URL" you are
 told *every* app the URL reaches.
 
+`content` takes the file itself, so the offline pair works on a draft that is not deployed
+anywhere — a pull request, a local build, a file pasted into the chat.
+
 ## As a command line
+
+The same five answers, without an MCP client. `--json` emits the structured result instead of
+formatted text, so the same answers drop into CI.
 
 ```bash
 blazingly-aasa check example.com "https://example.com/buy/42" --app ABCDE12345.com.example.app
@@ -111,12 +117,68 @@ blazingly-aasa check example.com "https://example.com/buy/42"        # which app
 blazingly-aasa fetch example.com [--cdn]
 blazingly-aasa compare example.com
 blazingly-aasa validate ./apple-app-site-association
-blazingly-aasa explain - example.com "https://example.com/buy/42" < file.json
+blazingly-aasa explain ./apple-app-site-association example.com "https://example.com/buy/42"
 ```
 
-`--json` emits the structured result instead of formatted text, so the same answers drop into CI.
-Exit status is non-zero when the answer is bad news — a miss, a validation error, an origin and CDN
-that disagree — which is what makes `blazingly-aasa validate` usable as a build step.
+`explain` accepts `-` to read the file from standard input.
+
+**Exit status is the point.** It is non-zero when the answer is bad news — a miss, a validation
+error, an origin and CDN that disagree — which is what makes this usable as a build step rather
+than something a human has to read.
+
+Linting a file with one mistake in it (`examples/broken.json`, a query dictionary with a boolean
+in it):
+
+```text
+
+apps:
+  ABCDE12345.com.example.app                   applinks
+
+diagnostics:  1 error(s), 2 warning(s)
+  error [AASA150] applinks.details[0].components[0].?.flag: query predicate is a boolean, but Apple documents only string patterns here
+  help: Apple ignores the entire query dictionary when any predicate is not a string, so every query constraint in this rule stops applying and the rule matches more URLs, not fewer. Replace every predicate with a string pattern.
+  warning [AASA180] applinks.details[0].components[0]: this rule constrains no URL component, so it matches every URL
+  help: it opens the whole domain for this app; add `/`, `?`, or `#` if that was not intended
+  warning [AASA190] applinks.details[0].components[1]: rule #0 already matches every URL, so this rule never runs
+  help: the first matching rule wins; move this rule above the catch-all
+exit=1
+```
+
+One mistake, three diagnostics, and the chain is the interesting part: Apple discards the whole
+`?` dictionary because one predicate is not a string, which leaves that rule constraining nothing,
+which makes the rule after it unreachable. A rule the author believed was narrow is in fact open.
+
+Explaining a near miss (`examples/demo.json`, whose second rule wants a four-character
+`articleNumber`):
+
+```text
+NO_MATCH
+
+application: ABCDE12345.com.example.app
+domain:      example.com
+url:         https://example.com/help/1?articleNumber=481
+
+reason:
+  the entries that apply to ABCDE12345.com.example.app have no rule matching this URL
+
+closest failure:
+  detail #0, rule #1
+  [ok  ] path
+         url:     /help/1
+         pattern: /help/*
+         wildcard match
+  [FAIL] query[articleNumber]
+         url:     481
+         pattern: ????
+         pattern did not match
+
+apps reached: none
+exit=1
+```
+
+The trace names the rule that came closest and the single component that failed, with the pattern
+and the input side by side. `scripts/check_examples.sh` diffs both of these against
+`examples/expected/`, and CI runs it, so the blocks above cannot drift from what the binary prints.
 
 ## The one that finds the hard bugs
 

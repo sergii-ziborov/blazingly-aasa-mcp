@@ -1,0 +1,3 @@
+{"applinks":{"details":[{"appIDs":["ABCDE12345.com.example.app"],
+"components":[{"/":"/help/website/*","exclude":true},
+              {"/":"/help/*","?":{"articleNumber":"????"}}]}]}}

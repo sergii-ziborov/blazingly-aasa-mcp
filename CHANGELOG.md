@@ -3,6 +3,25 @@
 All notable changes to this project are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2] - 2026-09-04
+
+### Fixed
+
+- **`AASA150` explained itself backwards, and this crate was repeating it.** The engine dependency
+  moves to `blazingly-aasa` 0.1.3, where the help text for a non-string query predicate says what
+  Apple actually does: the whole `?` dictionary is discarded, so the rule matches *more* URLs, not
+  fewer. Anyone who ran `blazingly-aasa validate` before this release was told the opposite.
+
+### Changed
+
+- `compare_origin_and_cdn` says **policy** where the engine says policy. `equivalent` documents the
+  contract in the sound direction only — true guarantees the same decision for every URL, false
+  means they may differ and produces no witness URL — and "behavioural change(s)" in the rendered
+  output is now "policy change(s)". The word behaviour comes back when a witness comes with it.
+- The README documents each tool's required and optional arguments, and quotes real CLI output for
+  the two offline commands. `scripts/check_examples.sh` diffs that output against
+  `examples/expected/` and CI runs it, so the README cannot drift from the binary.
+
 ## [0.1.1] - 2026-09-03
 
 ### Fixed — security

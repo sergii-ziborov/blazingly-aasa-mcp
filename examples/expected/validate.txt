@@ -1,0 +1,12 @@
+
+apps:
+  ABCDE12345.com.example.app                   applinks
+
+diagnostics:  1 error(s), 2 warning(s)
+  error [AASA150] applinks.details[0].components[0].?.flag: query predicate is a boolean, but Apple documents only string patterns here
+  help: Apple ignores the entire query dictionary when any predicate is not a string, so every query constraint in this rule stops applying and the rule matches more URLs, not fewer. Replace every predicate with a string pattern.
+  warning [AASA180] applinks.details[0].components[0]: this rule constrains no URL component, so it matches every URL
+  help: it opens the whole domain for this app; add `/`, `?`, or `#` if that was not intended
+  warning [AASA190] applinks.details[0].components[1]: rule #0 already matches every URL, so this rule never runs
+  help: the first matching rule wins; move this rule above the catch-all
+exit=1

@@ -29,6 +29,10 @@ jobs:
       - name: Workflow files parse and declare triggers
         if: matrix.os == 'ubuntu-latest'
         run: pip install --quiet pyyaml && python3 scripts/check_workflows.py
+      # The README quotes this output verbatim; offline commands only, so it runs anywhere.
+      - name: CLI prints what the README says it prints
+        if: matrix.os == 'ubuntu-latest'
+        run: ./scripts/check_examples.sh
       - name: Documentation
         run: cargo doc --no-deps --all-features
         env:

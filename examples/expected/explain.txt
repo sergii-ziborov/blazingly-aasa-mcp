@@ -1,0 +1,22 @@
+NO_MATCH
+
+application: ABCDE12345.com.example.app
+domain:      example.com
+url:         https://example.com/help/1?articleNumber=481
+
+reason:
+  the entries that apply to ABCDE12345.com.example.app have no rule matching this URL
+
+closest failure:
+  detail #0, rule #1
+  [ok  ] path
+         url:     /help/1
+         pattern: /help/*
+         wildcard match
+  [FAIL] query[articleNumber]
+         url:     481
+         pattern: ????
+         pattern did not match
+
+apps reached: none
+exit=1
