@@ -21,6 +21,11 @@ jobs:
         with:
           components: clippy, rustfmt
       - uses: Swatinem/rust-cache@v2
+      # Without --locked, CI resolves the engine dependency fresh, so a release of
+      # blazingly-aasa that changes any diagnostic text would break this build on a commit that
+      # touched nothing. The committed lockfile is what the recorded example output was made
+      # against; upgrading is a deliberate `cargo update`, not a surprise on an unrelated push.
+      - run: cargo check --all-targets --locked
       - run: cargo fmt --all --check
       # No test reaches the network, so CI is not at the mercy of someone else's DNS.
       - run: cargo test --all-targets
